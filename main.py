@@ -1,20 +1,28 @@
-import requests
 import os
+import random
 from pathlib import Path
 from urllib.parse import urlsplit
+
+import requests
 from dotenv import load_dotenv
+
 from functions_upload_images import saved_image
 
 
-# Скачиваение комикса
 def fetch_xkcd():
-    url = "https://xkcd.com/info.0.json"
     image_path = Path() / 'images' / 'xkcd'
-    response = requests.get(url=url)
+    latest_comic_url = "https://xkcd.com/info.0.json"
+    response = requests.get(url=latest_comic_url)
     response.raise_for_status()
-    comics = response.json()
-    image_url = comics["img"]
-    comics_text = comics["alt"]
+    latest_comic = response.json()
+    latest_comic_number = latest_comic['num']
+    random_comic_number = random.randint(1, latest_comic_number)
+    comic_url = f"https://xkcd.com/{random_comic_number}/info.0.json"
+    response = requests.get(url=comic_url)
+    response.raise_for_status()
+    comic = response.json()
+    image_url = comic["img"]
+    comic_text = comic["alt"]
     image_link_path = urlsplit(image_url).path
     _, image_path_tail = os.path.split(image_link_path)
     saved_image(
@@ -23,10 +31,9 @@ def fetch_xkcd():
         image_path_tail
     )
     file_path = Path() / image_path / image_path_tail
-    return file_path, comics_text
+    return file_path, comic_text
 
 
-# Получение адреса от сервера на загрузку
 def get_vk_upload_url(vk_group_id, vk_access_token, vk_api_version):
     url = "https://api.vk.com/method/photos.getWallUploadServer"
     params = {
@@ -39,7 +46,6 @@ def get_vk_upload_url(vk_group_id, vk_access_token, vk_api_version):
     return upload_url
 
 
-# Загрузка на сервер по адресу
 def upload_to_vk_server(
         vk_group_id,
         vk_access_token,
@@ -58,11 +64,13 @@ def upload_to_vk_server(
         }
         response = requests.post(url, files=files, params=params)
         response.raise_for_status()
-        metadata = response.json()
-    return metadata['server'], metadata['photo'], metadata['hash']
+        upload_result = response.json()
+        server = upload_result['server']
+        photo = upload_result['photo']
+        hash = upload_result['hash']
+    return server, photo, hash
 
 
-# Сохранение фото на сервере
 def save_photo_to_vk_server(
         vk_group_id,
         vk_access_token,
@@ -82,30 +90,29 @@ def save_photo_to_vk_server(
     }
     response = requests.post(url=url, params=params)
     response.raise_for_status()
-    data = response.json()
-    owner_id = data['response'][0]['owner_id']
-    photo_id = data['response'][0]['id']
-    return owner_id, photo_id
+    saved_photo = response.json()
+    photo_owner_id = saved_photo['response'][0]['owner_id']
+    photo_id = saved_photo['response'][0]['id']
+    return photo_owner_id, photo_id
 
 
-# Публикация фото на стене
 def publish_photo_to_wall(
         vk_group_id,
         vk_access_token,
         vk_api_version,
-        owner_id,
+        photo_owner_id,
         photo_id,
-        comics_text
+        comic_text
 ):
     url = "https://api.vk.com/method/wall.post"
     params = {
         "v": vk_api_version,
         "group_id": vk_group_id,
         "access_token": vk_access_token,
-        "attachments": f'photo{owner_id}_{photo_id}',
-        "owner_id": -vk_group_id,
+        "attachments": f'photo{photo_owner_id}_{photo_id}',
+        "owner_id": f"-{vk_group_id}",
         "from_group": 1,
-        "message": comics_text
+        "message": comic_text
     }
     response = requests.post(url=url, params=params)
     response.raise_for_status()
@@ -116,14 +123,14 @@ def main():
     vk_group_id = os.environ['VK_GROUP_ID']
     vk_access_token = os.environ['VK_ACCESS_TOKEN']
     vk_api_version = os.environ['VK_API_VERSION']
-    file_path, comics_text = fetch_xkcd()
+    file_path, comic_text = fetch_xkcd()
     server, photo, hash = upload_to_vk_server(
         vk_group_id,
         vk_access_token,
         vk_api_version,
         file_path
     )
-    owner_id, photo_id = save_photo_to_vk_server(
+    photo_owner_id, photo_id = save_photo_to_vk_server(
         vk_group_id,
         vk_access_token,
         vk_api_version,
@@ -135,10 +142,11 @@ def main():
         vk_group_id,
         vk_access_token,
         vk_api_version,
-        owner_id,
+        photo_owner_id,
         photo_id,
-        comics_text
+        comic_text
     )
+    os.remove(file_path)
 
 
 if __name__ == "__main__":
