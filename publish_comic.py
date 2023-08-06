@@ -68,11 +68,11 @@ def upload_to_vk_server(
             "access_token": vk_access_token
         }
         response = requests.post(url, files=files, params=params)
-        response.raise_for_status()
-        upload_result = response.json()
-        server = upload_result['server']
-        photo = upload_result['photo']
-        upload_result_hash = upload_result['hash']
+    response.raise_for_status()
+    upload_result = response.json()
+    server = upload_result['server']
+    photo = upload_result['photo']
+    upload_result_hash = upload_result['hash']
     return server, photo, upload_result_hash
 
 
