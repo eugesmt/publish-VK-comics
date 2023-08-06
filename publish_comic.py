@@ -7,11 +7,9 @@ import requests
 from dotenv import load_dotenv
 
 
-def save_image(url, image_path, image_name):
+def save_image(url, file_path):
     response = requests.get(url)
     response.raise_for_status()
-    Path(image_path).mkdir(parents=True, exist_ok=True)
-    file_path = Path() / image_path / image_name
     with open(file_path, 'wb') as file:
         file.write(response.content)
 
@@ -32,12 +30,12 @@ def fetch_xkcd_comics():
     comic_text = comic["alt"]
     image_link_path = urlsplit(image_url).path
     _, image_path_tail = os.path.split(image_link_path)
+    Path(image_path).mkdir(parents=True, exist_ok=True)
+    file_path = Path() / image_path / image_path_tail
     save_image(
         image_url,
-        image_path,
-        image_path_tail
+        file_path
     )
-    file_path = Path() / image_path / image_path_tail
     return file_path, comic_text
 
 
