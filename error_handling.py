@@ -1,31 +1,19 @@
 import requests
 
 
-class FileSavingError(Exception):
-    pass
+def handle_vk_api_response(response_result):
+    try:
+        if response_result['error']:
+            error_code = response_result['error']['error_code']
+            error_message = response_result['error']['error_msg']
+            raise requests.RequestException(f"{error_code} {error_message}")
+    except KeyError:
+        pass
 
 
-class VKResponse:
-    def __init__(self, action, respose):
-        self.action = action
-        self.response = respose
-
-    def handle_vk_api_response(self):
-        actions = ['GetWallUploadServer', 'SaveWallPhoto', 'WallPost']
-        if self.action in actions:
-            try:
-                negative_response = self.response['error']
-                if negative_response:
-                    raise requests.RequestException(
-                        negative_response['error_msg']
-                    )
-            except KeyError:
-                positive_response = self.response['response']
-                if positive_response:
-                    pass
-        elif self.action == 'UploadToVKServer':
-            photo = self.response['photo']
-            if photo == '[]':
-                raise requests.RequestException("Картинка не загружена")
-            else:
-                pass
+def handle_upload_vk_server_response(response_result):
+    try:
+        if response_result['photo'] == '[]':
+            raise requests.RequestException("Картинка не загружена")
+    except KeyError:
+        pass
