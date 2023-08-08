@@ -39,9 +39,9 @@ def get_vk_upload_url(vk_group_id, vk_access_token, vk_api_version):
     }
     response = requests.get(url=url, params=params)
     response.raise_for_status()
-    response_result = response.json()
-    err.handle_vk_api_response(response_result)
-    upload_url = response_result['response']['upload_url']
+    vk_response_result = response.json()
+    err.handle_vk_api_response(vk_response_result)
+    upload_url = vk_response_result['response']['upload_url']
     return upload_url
 
 
@@ -63,12 +63,12 @@ def upload_to_vk_server(
         }
         response = requests.post(url, files=files, params=params)
     response.raise_for_status()
-    upload_result = response.json()
-    err.handle_upload_vk_server_response(upload_result)
-    server = upload_result['server']
-    photo = upload_result['photo']
-    upload_result_hash = upload_result['hash']
-    return server, photo, upload_result_hash
+    uploading_vk_server_result = response.json()
+    err.handle_upload_vk_server_response(uploading_vk_server_result)
+    server = uploading_vk_server_result['server']
+    photo = uploading_vk_server_result['photo']
+    uploading_vk_server_hash = uploading_vk_server_result['hash']
+    return server, photo, uploading_vk_server_hash
 
 
 def save_photo_to_vk_server(
@@ -117,8 +117,8 @@ def publish_photo_to_wall(
     }
     response = requests.post(url=url, params=params)
     response.raise_for_status()
-    response_result = response.json()
-    err.handle_upload_vk_server_response(response_result)
+    photo_publishing_result = response.json()
+    err.handle_upload_vk_server_response(photo_publishing_result)
 
 
 def main():
@@ -128,7 +128,7 @@ def main():
     vk_api_version = os.environ['VK_API_VERSION']
     try:
         file_path, comic_text = fetch_xkcd_comics()
-        server, photo, upload_result_hash = upload_to_vk_server(
+        server, photo, uploading_vk_server_hash = upload_to_vk_server(
             vk_group_id,
             vk_access_token,
             vk_api_version,
@@ -140,7 +140,7 @@ def main():
             vk_api_version,
             server,
             photo,
-            upload_result_hash
+            uploading_vk_server_hash
         )
         publish_photo_to_wall(
             vk_group_id,
