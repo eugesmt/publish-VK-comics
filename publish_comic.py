@@ -1,6 +1,7 @@
 import os
 import random
 from pathlib import Path
+import shutil
 
 import requests
 from dotenv import load_dotenv
@@ -152,7 +153,9 @@ def main():
     except requests.RequestException as error:
         print(error)
     finally:
-        fop.delete_directory(file_path)
+        head_path_tail, _ = os.path.split(file_path)
+        if os.path.exists(head_path_tail):
+            shutil.rmtree(head_path_tail)
 
 
 if __name__ == "__main__":
