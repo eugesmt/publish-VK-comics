@@ -1,7 +1,5 @@
 import os
 import random
-from pathlib import Path
-import shutil
 
 import requests
 from dotenv import load_dotenv
@@ -11,7 +9,6 @@ import file_operations as fop
 
 
 def fetch_xkcd_comics():
-    image_path = Path() / 'images' / 'xkcd'
     latest_comic_url = "https://xkcd.com/info.0.json"
     response = requests.get(url=latest_comic_url)
     latest_comic = response.json()
@@ -23,10 +20,7 @@ def fetch_xkcd_comics():
     comic = response.json()
     image_url = comic["img"]
     comic_text = comic["alt"]
-    file_path = fop.save_image(
-        image_url,
-        image_path
-    )
+    file_path = fop.save_image(image_url)
     return file_path, comic_text
 
 
@@ -153,9 +147,7 @@ def main():
     except requests.RequestException as error:
         print(error)
     finally:
-        head_path_tail, _ = os.path.split(file_path)
-        if os.path.exists(head_path_tail):
-            shutil.rmtree(head_path_tail)
+        os.remove(file_path)
 
 
 if __name__ == "__main__":
